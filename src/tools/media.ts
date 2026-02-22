@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { wpFetch, wpUpload } from "../wp-client.js";
+import { wpFetch, wpUpload, wpUploadBuffer } from "../wp-client.js";
 
 export function registerMediaTools(server: McpServer) {
   server.tool(
@@ -36,20 +36,42 @@ export function registerMediaTools(server: McpServer) {
 
   server.tool(
     "wp_upload_media",
-    "Upload a local file to the WordPress media library",
+    "Upload media to WordPress. Provide either file_path (local file) or data (base64-encoded content) with filename.",
     {
-      file_path: z.string().describe("Absolute path to the file to upload"),
+      file_path: z.string().optional().describe("Absolute path to a local file to upload"),
+      data: z.string().optional().describe("Base64-encoded file content (use instead of file_path)"),
+      filename: z.string().optional().describe("Filename including extension, e.g. 'photo.jpg' (required when using data)"),
       alt_text: z.string().optional().describe("Alt text for the image"),
       caption: z.string().optional().describe("Caption for the media item"),
       title: z.string().optional().describe("Title for the media item"),
     },
-    async ({ file_path, alt_text, caption, title }) => {
+    async ({ file_path, data, filename, alt_text, caption, title }) => {
+      if (!file_path && !data) {
+        return {
+          content: [{ type: "text" as const, text: "Error: provide either file_path or data" }],
+          isError: true,
+        };
+      }
+      if (data && !filename) {
+        return {
+          content: [{ type: "text" as const, text: "Error: filename is required when using data" }],
+          isError: true,
+        };
+      }
+
       const metadata: Record<string, string> = {};
       if (alt_text) metadata.alt_text = alt_text;
       if (caption) metadata.caption = caption;
       if (title) metadata.title = title;
 
-      const result = (await wpUpload("/media", file_path, metadata)) as Record<string, unknown>;
+      let result: Record<string, unknown>;
+      if (data) {
+        const buffer = Buffer.from(data, "base64");
+        result = (await wpUploadBuffer("/media", buffer, filename!, metadata)) as Record<string, unknown>;
+      } else {
+        result = (await wpUpload("/media", file_path!, metadata)) as Record<string, unknown>;
+      }
+
       return {
         content: [
           {

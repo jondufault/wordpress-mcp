@@ -69,9 +69,18 @@ export async function wpUpload(
   filePath: string,
   metadata?: Record<string, string>
 ): Promise<unknown> {
-  const url = `${BASE_URL}${endpoint}`;
   const fileBuffer = await readFile(filePath);
   const fileName = basename(filePath);
+  return wpUploadBuffer(endpoint, fileBuffer, fileName, metadata);
+}
+
+export async function wpUploadBuffer(
+  endpoint: string,
+  fileBuffer: Buffer,
+  fileName: string,
+  metadata?: Record<string, string>
+): Promise<unknown> {
+  const url = `${BASE_URL}${endpoint}`;
 
   // Determine MIME type from extension
   const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
@@ -96,7 +105,7 @@ export async function wpUpload(
       "Content-Type": contentType,
       "Content-Disposition": `attachment; filename="${fileName}"`,
     },
-    body: fileBuffer,
+    body: new Uint8Array(fileBuffer),
   });
 
   if (!response.ok) {
