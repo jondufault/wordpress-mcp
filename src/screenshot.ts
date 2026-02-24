@@ -33,14 +33,11 @@ export async function takeScreenshot(options: {
       if (status === "publish") {
         targetUrl = post.link as string;
       } else {
-        // Draft — need to authenticate via wp-login first
-        await page.goto(`${WP_URL}/wp-login.php`, { waitUntil: "networkidle2" });
-        await page.type("#user_login", WP_USER!);
-        await page.type("#user_pass", WP_APP_PASSWORD!);
-        await Promise.all([
-          page.click("#wp-submit"),
-          page.waitForNavigation({ waitUntil: "networkidle2" }),
-        ]);
+        // Not published — authenticate via Basic Auth header for preview access
+        const credentials = Buffer.from(`${WP_USER}:${WP_APP_PASSWORD}`).toString("base64");
+        await page.setExtraHTTPHeaders({
+          Authorization: `Basic ${credentials}`,
+        });
         targetUrl = `${WP_URL}/?p=${postId}&preview=true`;
       }
     } else if (url) {
