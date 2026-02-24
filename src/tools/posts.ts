@@ -58,10 +58,10 @@ export function registerPostTools(server: McpServer) {
 
   server.tool(
     "wp_create_post",
-    "Create a new WordPress post",
+    "Create a new WordPress post. Content supports Gutenberg block markup for full block editor compatibility.",
     {
       title: z.string().describe("Post title"),
-      content: z.string().describe("Post content (HTML)"),
+      content: z.string().describe("Post content (HTML or Gutenberg block markup)"),
       status: z
         .enum(["publish", "draft", "pending", "private"])
         .optional()
@@ -94,11 +94,11 @@ export function registerPostTools(server: McpServer) {
 
   server.tool(
     "wp_update_post",
-    "Update an existing WordPress post",
+    "Update an existing WordPress post. Content supports Gutenberg block markup for full block editor compatibility.",
     {
       id: z.number().describe("Post ID"),
       title: z.string().optional().describe("Post title"),
-      content: z.string().optional().describe("Post content (HTML)"),
+      content: z.string().optional().describe("Post content (HTML or Gutenberg block markup)"),
       status: z
         .enum(["publish", "draft", "pending", "private"])
         .optional()
